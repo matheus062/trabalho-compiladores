@@ -1,0 +1,16 @@
+<?php 
+
+int $a = 1;
+
+int $b = 1;
+
+$b = 3;
+
+function testeFuncao(int $d): int {
+	$d = 2;
+}
+
+testeFuncao($b);
+
+$a = 2;
+
