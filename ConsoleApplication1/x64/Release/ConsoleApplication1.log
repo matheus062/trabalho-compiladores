@@ -1,0 +1,11 @@
+﻿  Semantico.cpp
+C:\dev\TrabalhoCompiladores\ConsoleApplication1\Semantico.h(174,73): warning C4290: especificação de exceção de C++ ignorada exceto para indicar que a função não é __declspec(nothrow)
+  (compilando o arquivo fonte 'Semantico.cpp')
+  
+C:\dev\TrabalhoCompiladores\ConsoleApplication1\Semantico.cpp(20,83): warning C4290: especificação de exceção de C++ ignorada exceto para indicar que a função não é __declspec(nothrow)
+  Gerando código
+  1 of 541 functions ( 0.2%) were compiled, the rest were copied from previous compilation.
+    0 functions were new in current compilation
+    1 functions had inline decision re-evaluated but remain unchanged
+  Finalizada a geração de código
+  ConsoleApplication1.vcxproj -> C:\dev\TrabalhoCompiladores\x64\Release\ConsoleApplication1.exe

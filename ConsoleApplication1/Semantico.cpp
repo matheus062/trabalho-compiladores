@@ -211,8 +211,6 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 			}
 		}
 		else {
-
-
 			// Receber o valor de uma expressão aritmética (resolver depois)
 		}
 
@@ -232,9 +230,9 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 					assembly.gera_cod("STO", "$indr");
 					assembly.gera_cod("LDV", symbolOnExp->idOnData);
 				}
-				else {
-					assembly.gera_cod("LD", symbolOnExp->idOnData);
-				}
+				//else {
+				//	assembly.gera_cod("LD", symbolOnExp->idOnData);
+				//}
 			}
 			else {
 				assembly.gera_cod("LDI", token->getLexeme());
@@ -256,9 +254,9 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 					assembly.gera_cod("STO", "$indr");
 					assembly.gera_cod("LDV", symbolOnExp->idOnData);
 				}
-				else {
-					assembly.gera_cod("LD", symbolOnExp->idOnData);
-				}
+				//else {
+				//	assembly.gera_cod("LD", symbolOnExp->idOnData);
+				//}
 			}
 			else {
 				assembly.gera_cod("LDI", token->getLexeme());
@@ -279,7 +277,9 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 			throw SemanticError("Tentativa de utilizacao de variavel nao existe no escopo.", token->getPosition());
 		}
 
-		if (flagOp)
+		if (!flagOp)
+			assembly.gera_cod("LD", symbolOnExp->idOnData);
+		else
 		{
 			if (oper == "+")
 				assembly.gera_cod("ADD", symbolOnExp->idOnData);
@@ -287,7 +287,6 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 				assembly.gera_cod("SUB", symbolOnExp->idOnData);
 			flagOp = false;
 		}
-
 		break;
 
 	case 20:
@@ -310,12 +309,14 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 
 		break;
 	case 22:
+		//if (!flagOp)
+		//	assembly.gera_cod("LDI", token->getLexeme());
 		if (flagOp)
 		{
 			if (oper == "+")
-				assembly.gera_cod("ADD", symbolOnExp->idOnData);
+				assembly.gera_cod("ADDI", token->getLexeme());
 			else if (oper == "-")
-				assembly.gera_cod("SUB", symbolOnExp->idOnData);
+				assembly.gera_cod("SUBI", token->getLexeme());
 			flagOp = false;
 		}
 

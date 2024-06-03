@@ -1,0 +1,5 @@
+C:\dev\TrabalhoCompiladores\ConsoleApplication1\ConsoleApplication1.cpp;C:\dev\TrabalhoCompiladores\ConsoleApplication1\x64\Release\ConsoleApplication1.obj
+C:\dev\TrabalhoCompiladores\ConsoleApplication1\Constants.cpp;C:\dev\TrabalhoCompiladores\ConsoleApplication1\x64\Release\Constants.obj
+C:\dev\TrabalhoCompiladores\ConsoleApplication1\Lexico.cpp;C:\dev\TrabalhoCompiladores\ConsoleApplication1\x64\Release\Lexico.obj
+C:\dev\TrabalhoCompiladores\ConsoleApplication1\Semantico.cpp;C:\dev\TrabalhoCompiladores\ConsoleApplication1\x64\Release\Semantico.obj
+C:\dev\TrabalhoCompiladores\ConsoleApplication1\Sintatico.cpp;C:\dev\TrabalhoCompiladores\ConsoleApplication1\x64\Release\Sintatico.obj

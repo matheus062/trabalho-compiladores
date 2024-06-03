@@ -2,16 +2,15 @@
 temp0 : 0
 temp1 : 0
 a: 0
-c: 0, 0
+b: 0
 .text
-LDI 3
-STO a
-SUB a
+LDI 2
+STO b
 LDI 0
 STO temp0
-LD a
+LDI 1
 STO temp1
 LD temp0
 STO $indr
 LD temp1
-STOV c
+STOV a
