@@ -8,9 +8,12 @@
 using namespace std;
 using namespace SymbolTable;
 
+string stringTemp;
 int vectorSize;
 int vectorPos;
-SymbolTable::Symbol* selectedSymbol;
+SymbolTable::Symbol* symbolOnExp;
+Temp* temp;
+Temp* temp2;
 
 void Semantico::executeAction(int action, const Token* token) throw (SemanticError)
 {
@@ -39,7 +42,7 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 
 		break;
 	case 2:
-		(*currentSymbol).convertAndSetSymbol(token->getLexeme());
+		currentSymbol->convertAndSetSymbol(token->getLexeme());
 
 		break;
 
@@ -49,21 +52,21 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 			throw SemanticError("Variavel com mesmo nome declarada.", token->getPosition());
 		}
 
-		(*currentSymbol).id = token->getLexeme();
-		(*currentSymbol).scope = currentScope;
+		stringTemp = token->getLexeme();
+		currentSymbol->id = stringTemp;
+		currentSymbol->idOnData = stringTemp.replace(0, 1, "");
+		currentSymbol->scope = currentScope;
 		table.symbols.push_front(currentSymbol);
 
 		break;
 
 	case 4:
-		selectedSymbol = table.find(currentScope, token->getLexeme());
-
-		if (selectedSymbol == nullptr)
+		if (table.find(currentScope, token->getLexeme()) == nullptr)
 		{
 			throw SemanticError("Tentativa de utilizacao de variavel nao existe no escopo.", token->getPosition());
 		}
 
-		currentSymbol = selectedSymbol;
+		currentSymbol = table.find(currentScope, token->getLexeme());
 
 		break;
 	case 5:
@@ -72,9 +75,9 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 			throw SemanticError("Função com mesmo nome declarada.", token->getPosition());
 		}
 
-		(*currentSymbol).id = "func_" + token->getLexeme();
-		(*currentSymbol).scope = currentScope;
-		(*currentSymbol).func = true;
+		currentSymbol->id = "func_" + token->getLexeme();
+		currentSymbol->scope = currentScope;
+		currentSymbol->func = true;
 		table.symbols.push_front(currentSymbol);
 		currentScope++;
 
@@ -91,7 +94,7 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 
 		break;
 	case 8:
-		(*currentSymbol).vector = true;
+		currentSymbol->vector = true;
 
 		break;
 	case 9:
@@ -101,49 +104,53 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 			throw SemanticError("Tamanho de vetor não pode ser menor que 1.", token->getPosition());
 		}
 
-		(*currentSymbol).vectorSize = vectorSize;
+		currentSymbol->vectorSize = vectorSize;
 
 		break;
 	case 10:
 		vectorPos = stoi(token->getLexeme());
 
-		if (!(*currentSymbol).vector) {
+		if (!currentSymbol->vector) {
 			throw SemanticError("Variável selecionada não é um vetor.", token->getPosition());
-		} else if((vectorPos < 0) || (vectorPos >= (*currentSymbol).vectorSize)) {
+		}
+		else if ((vectorPos < 0) || (vectorPos >= currentSymbol->vectorSize)) {
 			throw SemanticError("Posição do vetor inválida.", token->getPosition());
 		}
 
-		(*currentSymbol).vectorPos = vectorSize;
+		currentSymbol->vectorPos = vectorPos;
 
 		break;
 
 	case 11:
-		(*currentSymbol).vectorSize++;
-		
+		currentSymbol->vectorSize++;
+
 		break;
 	case 12:
-		(*currentSymbol).matrix = true;
+		currentSymbol->matrix = true;
 
 		break;
 	case 13:
-		assembly.data.clear();
-		assembly.data.append(".data\n");
+		for (auto t : assembly.temp)
+		{
+			assembly.data.append(t.name);
+			assembly.data.append(" : 0\n");
+		}
 
 		for (auto it = table.symbols.rbegin(); it != table.symbols.rend(); ++it)
 		{
 			Symbol sym = **it;
 
-			assembly.data.append(sym.id.replace(0, 1, ""));
+			assembly.data.append(sym.idOnData);
 
 			if (sym.vector)
 			{
 				assembly.data.append(":");
-				
+
 				for (int i = 0; i < sym.vectorSize; i++)
 				{
 					assembly.data.append(" 0,");
 				}
-				
+
 				assembly.data.replace((assembly.data.length() - 1), assembly.data.length(), "\n");
 			}
 			else
@@ -152,7 +159,137 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 			}
 		}
 
+		break;
 
+	case 14:
+		currentSymbol->initialized = true;
+		assembly.gera_cod("LD", "$in_port");
+		assembly.gera_cod("STO", currentSymbol->idOnData);
+
+		break;
+	case 15:
+		temp = assembly.getTemp();
+		temp2 = assembly.getTemp();
+
+		assembly.gera_cod("LDI", to_string(currentSymbol->vectorPos));
+		assembly.gera_cod("STO", temp->name);
+		assembly.gera_cod("LD", "$in_port");
+		assembly.gera_cod("STO", temp2->name);
+		assembly.gera_cod("LD", temp->name);
+		assembly.gera_cod("STO", "$indr");
+		assembly.gera_cod("LD", temp2->name);
+		assembly.gera_cod("STOV", currentSymbol->idOnData);
+
+		temp->livre = true;
+		temp2->livre = true;
+
+		break;
+	case 16:
+		currentSymbol = nullptr;
+
+		break;
+
+	case 17:
+		if (currentSymbol != nullptr) {
+			if (currentSymbol->vector) {
+				temp = assembly.getTemp();
+				temp2 = assembly.getTemp();
+
+				assembly.gera_cod("LDI", to_string(currentSymbol->vectorPos));
+				assembly.gera_cod("STO", "$indr");
+				assembly.gera_cod("LDV", currentSymbol->idOnData);
+				assembly.gera_cod("STO", "$out_port");
+
+				temp->livre = true;
+				temp2->livre = true;
+			}
+			else {
+				assembly.gera_cod("LD", currentSymbol->idOnData);
+				assembly.gera_cod("STO", "$out_port");
+			}
+		}
+		else {
+
+
+			// Receber o valor de uma expressão aritmética (resolver depois)
+		}
+
+		break;
+
+	case 18:
+		if (currentSymbol->vector) {
+			temp = assembly.getTemp();
+			temp2 = assembly.getTemp();
+
+			assembly.gera_cod("LDI", to_string(currentSymbol->vectorPos));
+			assembly.gera_cod("STO", temp->name);
+
+			if (symbolOnExp != nullptr) {
+				if (symbolOnExp->vector) {
+					assembly.gera_cod("LDI", to_string(symbolOnExp->vectorPos));
+					assembly.gera_cod("STO", "$indr");
+					assembly.gera_cod("LDV", symbolOnExp->idOnData);
+				}
+				else {
+					assembly.gera_cod("LD", symbolOnExp->idOnData);
+				}
+			}
+			else {
+				assembly.gera_cod("LDI", token->getLexeme());
+			}
+			
+			assembly.gera_cod("STO", temp2->name);
+			assembly.gera_cod("LD", temp->name);
+			assembly.gera_cod("STO", "$indr");
+			assembly.gera_cod("LD", temp2->name);
+			assembly.gera_cod("STOV", currentSymbol->idOnData);
+
+			temp->livre = true;
+			temp2->livre = true;
+		}
+		else {
+			if (symbolOnExp != nullptr) {
+				if (symbolOnExp->vector) {
+					assembly.gera_cod("LDI", to_string(symbolOnExp->vectorPos));
+					assembly.gera_cod("STO", "$indr");
+					assembly.gera_cod("LDV", symbolOnExp->idOnData);
+				}
+				else {
+					assembly.gera_cod("LD", symbolOnExp->idOnData);
+				}
+			}
+			else {
+				assembly.gera_cod("LDI", token->getLexeme());
+			}
+
+			assembly.gera_cod("STO", currentSymbol->idOnData);
+		}
+
+		symbolOnExp = nullptr;
+
+		break;
+
+	case 19:
+		symbolOnExp = table.find(currentScope, token->getLexeme());
+
+		if (symbolOnExp == nullptr)
+		{
+			throw SemanticError("Tentativa de utilizacao de variavel nao existe no escopo.", token->getPosition());
+		}
+
+		break;
+
+	case 20:
+		vectorPos = stoi(token->getLexeme());
+
+		if (!symbolOnExp->vector) {
+			throw SemanticError("Variável selecionada não é um vetor.", token->getPosition());
+		}
+		else if ((vectorPos < 0) || (vectorPos >= symbolOnExp->vectorSize)) {
+			throw SemanticError("Posição do vetor inválida.", token->getPosition());
+		}
+
+		symbolOnExp->vectorPos = vectorPos;
 
 		break;
 	};

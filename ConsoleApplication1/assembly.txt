@@ -1,5 +1,18 @@
 .data
+temp0 : 0
+temp1 : 0
 a: 0
-b: 0
-vetor: 0, 0, 0, 0, 0
-vetorA: 0, 0, 0
+b: 0, 0, 0, 0, 0
+.text
+LDI 0
+STO temp0
+LDI 34
+STO temp1
+LD temp0
+STO $indr
+LD temp1
+STOV b
+LDI 0
+STO $indr
+LDV b
+STO a

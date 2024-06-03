@@ -26,6 +26,7 @@ int main()
 
 	ofstream outputFile("assembly.txt");
 	outputFile << semantico->assembly.data;
+	outputFile << semantico->assembly.text;
 	outputFile.close();
 
 	return 0;

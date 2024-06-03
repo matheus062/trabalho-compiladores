@@ -1,6 +1,10 @@
 <?php 
 
-int $a = 1;
-int $b = 2;
-int $vetor[5];
-int $vetorA = [1, 2, 3];
+int $a;
+int $b[5];
+
+$b[0] = 34;
+$a = $b[0];
+
+
+

@@ -24,6 +24,7 @@ namespace SymbolTable {
 		};
 
 		string id;
+		string idOnData;
 		Type type;
 		int scope;
 		bool initialized = false;
@@ -105,52 +106,6 @@ namespace SymbolTable {
 	public:
 		list<Symbol*> symbols;
 
-		// string data;
-		// list<Temp> temp;
-		// int contador = 0;
-
-		// Temp* GetTemp()
-		// {
-		// 	for (Temp& t : temp)
-		// 	{
-		// 		if (t.livre) {
-		// 			return &t;
-		// 		}
-		// 	}
-		// 
-		// 	Temp t;
-		// 
-		// 	t.livre = true;
-		// 	t.name = "temp" + to_string(contador);
-		// 	temp.push_back(t);
-		// 
-		// 	this->contador++;
-		// 
-		// 	for (Temp& t : temp)
-		// 	{
-		// 		if (t.livre)
-		// 			return &t;
-		// 	}
-		// 
-		// 	return nullptr;
-		// }
-
-		//bool Procurar(stack<int> Escopo, string lexema)
-		//{
-		//	while (!Escopo.empty())
-		//	{
-		//		for (Symbol sim : this->lstSimbolos)
-		//		{
-		//			if (sim.escopo == Escopo.top() && sim.id == lexema)
-		//			{
-		//				return true;
-		//			}
-		//		}
-		//		Escopo.pop();
-		//	}
-		//	return false;
-		//}
-		
 		Symbol* find(int scope, string lexema)
 		{
 			for (Symbol* sym : this->symbols)
@@ -167,15 +122,42 @@ namespace SymbolTable {
 
 	class Assembly {
 	public:
-		string assembly = "";
 		string data = "";
+		string text = "";
+		list<Temp> temp;
+		int contador = 0;
+
+		Assembly() {
+			data.append(".data\n");
+			text.append(".text\n");
+		}
+
+		Temp* getTemp()
+		{
+			for (Temp& t : temp)
+			{
+				if (t.livre) {
+					t.livre = false;
+
+					return &t;
+				}
+			}
+
+			Temp* t = new Temp();
+			t->livre = false;
+			t->name = "temp" + to_string(contador);
+			temp.push_back(*t);
+			this->contador++;
+
+			return t;
+		}
 
 		void gera_cod(string funcao, string valor)
 		{
-			assembly.append(funcao);
-			assembly.append(" ");
-			assembly.append(valor);
-			assembly.append("\n");
+			text.append(funcao);
+			text.append(" ");
+			text.append(valor);
+			text.append("\n");
 		}
 	};
 
