@@ -1,13 +1,17 @@
 .data
+temp0 : 0
+temp1 : 0
 a: 0
-b: 0
+c: 0, 0
 .text
-LDI 2
+LDI 3
 STO a
-LD a
-ADDI 4
-STO b
-LD b
-LDI -
 SUB a
-STO a
+LDI 0
+STO temp0
+LD a
+STO temp1
+LD temp0
+STO $indr
+LD temp1
+STOV c
