@@ -14,6 +14,8 @@ int vectorPos;
 SymbolTable::Symbol* symbolOnExp;
 Temp* temp;
 Temp* temp2;
+bool flagOp = false;
+string oper;
 
 void Semantico::executeAction(int action, const Token* token) throw (SemanticError)
 {
@@ -130,7 +132,7 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 
 		break;
 	case 13:
-		for (auto t : assembly.temp)
+		for (Temp t : assembly.temp)
 		{
 			assembly.data.append(t.name);
 			assembly.data.append(" : 0\n");
@@ -234,10 +236,10 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 					assembly.gera_cod("LD", symbolOnExp->idOnData);
 				}
 			}
-			else {
-				assembly.gera_cod("LDI", token->getLexeme());
-			}
-			
+			//else {
+			//	assembly.gera_cod("LDI", token->getLexeme());
+			//}
+
 			assembly.gera_cod("STO", temp2->name);
 			assembly.gera_cod("LD", temp->name);
 			assembly.gera_cod("STO", "$indr");
@@ -254,12 +256,12 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 					assembly.gera_cod("STO", "$indr");
 					assembly.gera_cod("LDV", symbolOnExp->idOnData);
 				}
-				else {
-					assembly.gera_cod("LD", symbolOnExp->idOnData);
-				}
+				//else {
+				//	assembly.gera_cod("LD", symbolOnExp->idOnData);
+				//}
 			}
 			else {
-				assembly.gera_cod("LDI", token->getLexeme());
+				//assembly.gera_cod("LDI", token->getLexeme());
 			}
 
 			assembly.gera_cod("STO", currentSymbol->idOnData);
@@ -277,6 +279,17 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 			throw SemanticError("Tentativa de utilizacao de variavel nao existe no escopo.", token->getPosition());
 		}
 
+		if (!flagOp)
+			assembly.gera_cod("LD", symbolOnExp->idOnData);
+		else
+		{
+			if (oper == "+")
+				assembly.gera_cod("ADD", symbolOnExp->idOnData);
+			else if (oper == "-")
+				assembly.gera_cod("SUB", symbolOnExp->idOnData);
+			flagOp = false;
+		}
+
 		break;
 
 	case 20:
@@ -290,6 +303,25 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 		}
 
 		symbolOnExp->vectorPos = vectorPos;
+
+		break;
+
+	case 21:
+		flagOp = true;
+		oper = token->getLexeme();
+
+		break;
+	case 22:
+		if (!flagOp)
+			assembly.gera_cod("LDI", token->getLexeme());
+		else
+		{
+			if (oper == "+")
+				assembly.gera_cod("ADDI", token->getLexeme());
+			else if (oper == "-")
+				assembly.gera_cod("SUBI", token->getLexeme());
+			flagOp = false;
+		}
 
 		break;
 	};
