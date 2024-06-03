@@ -67,5 +67,8 @@
     <Text Include="file.txt">
       <Filter>Arquivos de Recurso</Filter>
     </Text>
+    <Text Include="assembly.txt">
+      <Filter>Arquivos de Recurso</Filter>
+    </Text>
   </ItemGroup>
 </Project>

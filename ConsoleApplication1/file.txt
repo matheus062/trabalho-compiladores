@@ -1,21 +1,6 @@
 <?php 
 
 int $a = 1;
-
-int $b = 1;
-
-$b = 3;
-
-function testeFuncao(int $d): int {
-	$d = 2;
-}
-
-testeFuncao($b);
-
-$a = 2;
-
-int $array = [1, 2, 3];
-
-$array[0] = 1;
-
-
+int $b = 2;
+int $vetor[5];
+int $vetorA = [1, 2, 3];

@@ -30,6 +30,7 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 		10 -> Seleciona posição atual do vetor
 		11 -> Aumenta tamanho do vetor quadno declarado dinamicamente
 		12 -> Especifica que é uma matriz
+		13 -> Gera o .data do assembly
 	*/
 
 	switch (action) {
@@ -104,7 +105,6 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 
 		break;
 	case 10:
-		// verificar a seleção do vetor
 		vectorPos = stoi(token->getLexeme());
 
 		if (!(*currentSymbol).vector) {
@@ -123,6 +123,36 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 		break;
 	case 12:
 		(*currentSymbol).matrix = true;
+
+		break;
+	case 13:
+		assembly.data.clear();
+		assembly.data.append(".data\n");
+
+		for (auto it = table.symbols.rbegin(); it != table.symbols.rend(); ++it)
+		{
+			Symbol sym = **it;
+
+			assembly.data.append(sym.id.replace(0, 1, ""));
+
+			if (sym.vector)
+			{
+				assembly.data.append(":");
+				
+				for (int i = 0; i < sym.vectorSize; i++)
+				{
+					assembly.data.append(" 0,");
+				}
+				
+				assembly.data.replace((assembly.data.length() - 1), assembly.data.length(), "\n");
+			}
+			else
+			{
+				assembly.data.append(": 0\n");
+			}
+		}
+
+
 
 		break;
 	};

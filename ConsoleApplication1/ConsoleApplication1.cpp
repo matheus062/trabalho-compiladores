@@ -24,5 +24,9 @@ int main()
 
 	sintatico->parse(lexico, semantico);
 
+	ofstream outputFile("assembly.txt");
+	outputFile << semantico->assembly.data;
+	outputFile.close();
+
 	return 0;
 }

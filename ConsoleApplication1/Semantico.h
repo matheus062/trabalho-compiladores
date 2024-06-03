@@ -165,11 +165,26 @@ namespace SymbolTable {
 		}
 	};
 
+	class Assembly {
+	public:
+		string assembly = "";
+		string data = "";
+
+		void gera_cod(string funcao, string valor)
+		{
+			assembly.append(funcao);
+			assembly.append(" ");
+			assembly.append(valor);
+			assembly.append("\n");
+		}
+	};
+
 }
 
 class Semantico
 {
 public:
+	SymbolTable::Assembly assembly = SymbolTable::Assembly();
 	SymbolTable::Table table;
 	SymbolTable::Symbol* currentSymbol;
 	int currentScope = 0;
