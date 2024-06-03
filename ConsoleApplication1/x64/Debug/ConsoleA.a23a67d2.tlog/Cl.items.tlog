@@ -1,5 +1,5 @@
-C:\dev\TesteCompiladores\ConsoleApplication1\ConsoleApplication1\ConsoleApplication1.cpp;C:\dev\TesteCompiladores\ConsoleApplication1\ConsoleApplication1\x64\Debug\ConsoleApplication1.obj
-C:\dev\TesteCompiladores\ConsoleApplication1\ConsoleApplication1\Constants.cpp;C:\dev\TesteCompiladores\ConsoleApplication1\ConsoleApplication1\x64\Debug\Constants.obj
-C:\dev\TesteCompiladores\ConsoleApplication1\ConsoleApplication1\Lexico.cpp;C:\dev\TesteCompiladores\ConsoleApplication1\ConsoleApplication1\x64\Debug\Lexico.obj
-C:\dev\TesteCompiladores\ConsoleApplication1\ConsoleApplication1\Semantico.cpp;C:\dev\TesteCompiladores\ConsoleApplication1\ConsoleApplication1\x64\Debug\Semantico.obj
-C:\dev\TesteCompiladores\ConsoleApplication1\ConsoleApplication1\Sintatico.cpp;C:\dev\TesteCompiladores\ConsoleApplication1\ConsoleApplication1\x64\Debug\Sintatico.obj
+C:\dev\TrabalhoCompiladores\ConsoleApplication1\ConsoleApplication1.cpp;C:\dev\TrabalhoCompiladores\ConsoleApplication1\x64\Debug\ConsoleApplication1.obj
+C:\dev\TrabalhoCompiladores\ConsoleApplication1\Constants.cpp;C:\dev\TrabalhoCompiladores\ConsoleApplication1\x64\Debug\Constants.obj
+C:\dev\TrabalhoCompiladores\ConsoleApplication1\Lexico.cpp;C:\dev\TrabalhoCompiladores\ConsoleApplication1\x64\Debug\Lexico.obj
+C:\dev\TrabalhoCompiladores\ConsoleApplication1\Semantico.cpp;C:\dev\TrabalhoCompiladores\ConsoleApplication1\x64\Debug\Semantico.obj
+C:\dev\TrabalhoCompiladores\ConsoleApplication1\Sintatico.cpp;C:\dev\TrabalhoCompiladores\ConsoleApplication1\x64\Debug\Sintatico.obj

@@ -14,3 +14,8 @@ testeFuncao($b);
 
 $a = 2;
 
+int $array = [1, 2, 3];
+
+$array[0] = 1;
+
+

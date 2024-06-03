@@ -8,6 +8,10 @@
 using namespace std;
 using namespace SymbolTable;
 
+int vectorSize;
+int vectorPos;
+SymbolTable::Symbol* selectedSymbol;
+
 void Semantico::executeAction(int action, const Token* token) throw (SemanticError)
 {
 	std::cout << "Action: " << action << ", Token: " << token->getId()
@@ -21,15 +25,20 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 		5 -> Declara o nome da função / Verifica se existe função com mesmo nome
 		6 -> retorna o escopo
 		7 -> Verifica se função foi declarada
+		8 -> Especifica que variável é vetor
+		9 -> Valida tamanho do vetor
+		10 -> Seleciona posição atual do vetor
+		11 -> Aumenta tamanho do vetor quadno declarado dinamicamente
+		12 -> Especifica que é uma matriz
 	*/
 
 	switch (action) {
 	case 1:
-		currentSymbol = Symbol();
+		currentSymbol = new Symbol();
 
 		break;
 	case 2:
-		currentSymbol.convertAndSetSymbol(token->getLexeme());
+		(*currentSymbol).convertAndSetSymbol(token->getLexeme());
 
 		break;
 
@@ -39,17 +48,21 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 			throw SemanticError("Variavel com mesmo nome declarada.", token->getPosition());
 		}
 
-		currentSymbol.id = token->getLexeme();
-		currentSymbol.scope = currentScope;
+		(*currentSymbol).id = token->getLexeme();
+		(*currentSymbol).scope = currentScope;
 		table.symbols.push_front(currentSymbol);
 
 		break;
 
 	case 4:
-		if (table.find(currentScope, token->getLexeme()) == nullptr)
+		selectedSymbol = table.find(currentScope, token->getLexeme());
+
+		if (selectedSymbol == nullptr)
 		{
 			throw SemanticError("Tentativa de utilizacao de variavel nao existe no escopo.", token->getPosition());
 		}
+
+		currentSymbol = selectedSymbol;
 
 		break;
 	case 5:
@@ -58,9 +71,9 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 			throw SemanticError("Função com mesmo nome declarada.", token->getPosition());
 		}
 
-		currentSymbol.id = "func_" + token->getLexeme();
-		currentSymbol.scope = currentScope;
-		currentSymbol.func = true;
+		(*currentSymbol).id = "func_" + token->getLexeme();
+		(*currentSymbol).scope = currentScope;
+		(*currentSymbol).func = true;
 		table.symbols.push_front(currentSymbol);
 		currentScope++;
 
@@ -76,121 +89,41 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 		}
 
 		break;
+	case 8:
+		(*currentSymbol).vector = true;
 
-		//case 4:
-		//	ptrAtribuir = Tabela.Find(stackEscopo, token->getLexeme());
-		//	if (ptrAtribuir == nullptr)
-		//	{
-		//		ResetaTabela();
-		//		throw SemanticError("Tentativa de atribuicao de variavel nao existente.", token->getPosition());
-		//	}
-		//	lstExp.clear();
-		//	store = token->getLexeme();
-		//
-		//	break;
+		break;
+	case 9:
+		vectorSize = stoi(token->getLexeme());
 
+		if (vectorSize < 1) {
+			throw SemanticError("Tamanho de vetor não pode ser menor que 1.", token->getPosition());
+		}
 
-		//case 6:
-		//	setInitialized = true;
-		//
-		//	switch (semanticTable.atribType(ConvertType(lastSimbol->tipo), return_type)) {
-		//
-		//	case -1:
-		//		ResetaTabela();
-		//		throw SemanticError("Erro na atribuicao de variavel.", token->getPosition());
-		//	case 1:
-		//		Tabela.setWarning(*lastSimbol, "Perda de precisao");
-		//		break;
-		//	}
-		//
-		//	for (Simbolo* ptr : lstExp)
-		//	{
-		//		if (ptr->escopo == lastSimbol->escopo && ptr->id == lastSimbol->id)
-		//		{
-		//			if (lastSimbol->inicializado == false) {
-		//				Tabela.setWarning(*lastSimbol, "Utilizacao da variavel na atribuicao da mesma");
-		//			}
-		//			setInitialized = false;
-		//		}
-		//		else
-		//		{
-		//			ptr->usado = true;
-		//			if (!ptr->inicializado)
-		//				Tabela.setWarning(*ptr);
-		//		}
-		//	}
-		//	if (setInitialized)
-		//	{
-		//		lastSimbol->inicializado = true;
-		//	}
-		//
-		//	lstExp.clear();
-		//	break;
-		//
-		//case 7:
-		//
-		//	if (Tabela.Procurar(stackEscopo, token->getLexeme()))
-		//	{
-		//		ResetaTabela();
-		//		throw SemanticError("Variavel com mesmo nome declarada", token->getPosition());
-		//	}
-		//
-		//	simbolo.funcao = true;
-		//	simbolo.parametro = false;
-		//	simbolo.vetor = false;
-		//	simbolo.id = token->getLexeme();
-		//	simbolo.escopo = stackEscopo.top();
-		//	func = token->getLexeme();
-		//	Tabela.lstSimbolos.push_front(simbolo);
-		//	ptrFunc = &Tabela.lstSimbolos.front();
-		//
-		//	simbolo.parametro = true;
-		//	break;
-		//
-		//case 10:
-		//	escopo++;
-		//	stackEscopo.push(escopo);
-		//	break;
-		//
-		//case 11:
-		//	if (stackEscopo.empty())
-		//	{
-		//		ResetaTabela();
-		//		throw SemanticError("} inesperado", token->getPosition());
-		//	}
-		//	stackEscopo.pop();
-		//	break;
-		//
-		//
+		(*currentSymbol).vectorSize = vectorSize;
+
+		break;
+	case 10:
+		// verificar a seleção do vetor
+		vectorPos = stoi(token->getLexeme());
+
+		if (!(*currentSymbol).vector) {
+			throw SemanticError("Variável selecionada não é um vetor.", token->getPosition());
+		} else if((vectorPos < 0) || (vectorPos >= (*currentSymbol).vectorSize)) {
+			throw SemanticError("Posição do vetor inválida.", token->getPosition());
+		}
+
+		(*currentSymbol).vectorPos = vectorSize;
+
+		break;
+
+	case 11:
+		(*currentSymbol).vectorSize++;
+		
+		break;
+	case 12:
+		(*currentSymbol).matrix = true;
+
+		break;
 	};
 }
-
-
-
-
-
-//void ResetaTabela()
-//{
-//	while (!stackEscopo.empty())
-//	{
-//		stackEscopo.pop();
-//	}
-//	while (!stackRot.empty())
-//	{
-//		stackRot.pop();
-//	}
-//	contIf = 0;
-//	escopo = 0;
-//	contpar = 0;
-//	simbolo.vetor = false;
-//	simbolo.parametro = false;
-//	lstExp.clear();
-//	lstExpType.clear();
-//	lstOperators.clear();
-//	vectorExp = false;
-//	firstVar = true;
-//	flagOp = false;
-//}
-
-
-

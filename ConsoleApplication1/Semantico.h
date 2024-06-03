@@ -34,7 +34,8 @@ namespace SymbolTable {
 		bool reference = false;
 		bool func = false;
 		int posParam = 0;
-		int posVetor = 0;
+		int vectorPos = 0;
+		int vectorSize = 0;
 
 		void convertAndSetSymbol(string type)
 		{
@@ -102,7 +103,8 @@ namespace SymbolTable {
 
 	class Table {
 	public:
-		list<Symbol> symbols;
+		list<Symbol*> symbols;
+
 		// string data;
 		// list<Temp> temp;
 		// int contador = 0;
@@ -151,11 +153,11 @@ namespace SymbolTable {
 		
 		Symbol* find(int scope, string lexema)
 		{
-			for (Symbol& sym : this->symbols)
+			for (Symbol* sym : this->symbols)
 			{
-				if ((sym.scope == scope) && (sym.id == lexema))
+				if (((*sym).scope == scope) && ((*sym).id == lexema))
 				{
-					return &sym;
+					return sym;
 				}
 			}
 
@@ -169,14 +171,10 @@ class Semantico
 {
 public:
 	SymbolTable::Table table;
-	SymbolTable::Symbol currentSymbol;
-	int currentScope;
+	SymbolTable::Symbol* currentSymbol;
+	int currentScope = 0;
 
 	void executeAction(int action, const Token* token) throw (SemanticError);
-
-	Semantico() {
-		this->currentScope = 0;
-	}
 };
 
 #endif
