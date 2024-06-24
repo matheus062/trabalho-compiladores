@@ -7,15 +7,18 @@ b: 0
 .text
 JMP main
 main:  
-LDI 5
+LD $in_port
 STO a
-LDI 0
+LDI 10
 STO b
-ROT1: 
+LD a
+STO temp0
 LD b
-ADDI 1
-STO b
-LD b
+STO temp1
+LD temp0
+SUB temp1
+BLT ROT1
+LD a
 STO $out_port
 LD a
 STO temp0
@@ -23,5 +26,15 @@ LD b
 STO temp1
 LD temp0
 SUB temp1
-BGE ROT1
+BNE ROT2
+LD b
+STO $out_port
+ROT2:  
+JMP ROT3
+ROT1:  
+LDI 999
+STO a
+LD a
+STO $out_port
+ROT3:  
 LDI 0

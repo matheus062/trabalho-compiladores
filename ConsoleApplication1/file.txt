@@ -2,16 +2,24 @@
 
 int main(){
 
-	int a;
-	int b;
+	int $a;
+	int $b;
 
-	a = 5;
-	b = 0;
+	php_in >> $a;
 
-	do {
-		b = b + 1;
-		php_out << b;
-	} while (a >= b);
+	$b = 10;
+
+	if ($a >= $b){
+		php_out << $a;
+
+		if($a == $b) {
+			php_out << $b;		
+		}
+
+	} else {
+		$a = 999;
+		php_out << $a;
+	}
 
 	return 0;
 }
