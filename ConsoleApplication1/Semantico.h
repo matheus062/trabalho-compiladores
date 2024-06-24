@@ -9,169 +9,149 @@
 
 using namespace std;
 
-namespace SymbolTable {
+class Simbolo {
+public:
+    string tipo;
+    string id;
 
-	class Symbol {
-	public:
-		enum Type {
-			Int,
-			Float,
-			Boolean,
-			String,
-			Array,
-			Void,
-			Null,
-		};
+    int escopo;
 
-		string id;
-		string idOnData;
-		Type type;
-		int scope;
-		bool initialized = false;
-		bool used = false;
-		bool param = false;
-		bool vector = false;
-		bool matrix = false;
-		bool reference = false;
-		bool func = false;
-		int posParam = 0;
-		int vectorPos = 0;
-		int vectorSize = 0;
+    bool inicializado = false;
+    bool usado = false;
 
-		void convertAndSetSymbol(string type)
-		{
-			if (type == "int")
-				this->type = Type::Int;
-			else if (type == "float")
-				this->type = Type::Float;
-			else if (type == "boolean")
-				this->type = Type::Boolean;
-			else if (type == "string")
-				this->type = Type::String;
-			else if (type == "array")
-				this->type = Type::Array;
-			else if (type == "void")
-				this->type = Type::Void;
-			else if (type == "null")
-				this->type = Type::Null;
-		}
-	};
+    bool parametro = false;
 
-	struct WarningMessage {
-	public:
-		string error;
-		Symbol symbol;
-	};
+    bool funcao = false;
+    int posParam = 0;
 
-	class Warning {
-	public:
-		void setUnusedWarning(Symbol symbol)
-		{
-			WarningMessage message;
-			message.symbol = symbol;
+    bool vetor = false;
+    int posVetor = 0;
 
-			if (symbol.func) {
-				message.error = "Função não utilizada.";
-			}
-			else if (symbol.param) {
-				message.error = "Parâmetro não utilizado.";
-			}
-			else {
-				message.error = "Variável não utilizada.";
-			}
+    void DeclararTipo(std::string t);
 
-			this->errorList.push_back(message);
-		}
+};
 
-		void setWarning(Symbol symbol, string error)
-		{
-			WarningMessage message;
-			message.error = error;
-			message.symbol = symbol;
+class Warning {
+public:
+    string error;
+    Simbolo sim;
+};
 
-			this->errorList.push_back(message);
-		}
+class Temp {
+public:
+    string name;
+    bool livre;
+};
 
-	private:
-		list<WarningMessage> errorList;
-	};
+class TabelaSimbolo
+{
+public:
+    list<Simbolo> lstSimbolos;
+    list<Warning> lstWarning;
+    string assembly = "";
+    string data;
+    list<Temp> temp;
+    int contador = 0;
 
-	class Temp {
-	public:
-		string name;
-		bool livre;
-	};
+    Temp* GetTemp()
+    {
+        for (Temp& t : temp)
+        {
+            if (t.livre) {
+                return &t;
+            }
+        }
 
-	class Table {
-	public:
-		list<Symbol*> symbols;
+        Temp t;
 
-		Symbol* find(int scope, string lexema)
-		{
-			for (Symbol* sym : this->symbols)
-			{
-				if (((*sym).scope == scope) && ((*sym).id == lexema))
-				{
-					return sym;
-				}
-			}
+        t.livre = true;
+        t.name = "temp" + to_string(contador);
+        temp.push_back(t);
 
-			return nullptr;
-		}
-	};
+        this->contador++;
 
-	class Assembly {
-	public:
-		string data = "";
-		string text = "";
-		list<Temp> temp;
-		int contador = 0;
+        for (Temp& t : temp)
+        {
+            if (t.livre)
+                return &t;
+        }
 
-		Assembly() {
-			data.append(".data\n");
-			text.append(".text\n");
-		}
+        gera_cod("Error:", "nullptr returned.");
+        return nullptr;
+    }
 
-		Temp* getTemp()
-		{
-			for (Temp& t : temp)
-			{
-				if (t.livre) {
-					t.livre = false;
+    void gera_cod(string funcao, string valor)
+    {
+        assembly.append(funcao);
+        assembly.append(" ");
+        assembly.append(valor);
+        assembly.append("\n");
+    }
 
-					return &t;
-				}
-			}
+    void setUnusedWarning()
+    {
+        Warning war;
+        for (Simbolo sim : this->lstSimbolos)
+        {
+            if (sim.usado == false)
+            {
+                war.sim = sim;
+                if (sim.funcao)
+                    war.error = "Funcao nao utilizada";
+                else
+                    war.error = "Variavel nao utilizada";
+                this->lstWarning.push_back(war);
+            }
+        }
+    }
 
-			Temp* t = new Temp();
-			t->livre = false;
-			t->name = "temp" + to_string(contador);
-			temp.push_back(*t);
-			this->contador++;
+    void setWarning(Simbolo sim, string error = "Variavel nao atribuiada utilizada")
+    {
+        Warning war;
+        war.error = error;
+        war.sim = sim;
+        this->lstWarning.push_back(war);
+    }
 
-			return t;
-		}
+    bool Procurar(stack<int> Escopo, string lexema)
+    {
+        while (!Escopo.empty())
+        {
+            for (Simbolo sim : this->lstSimbolos)
+            {
+                if (sim.escopo == Escopo.top() && sim.id == lexema)
+                {
+                    return true;
+                }
+            }
+            Escopo.pop();
+        }
+        return false;
+    }
 
-		void gera_cod(string funcao, string valor)
-		{
-			text.append(funcao);
-			text.append(" ");
-			text.append(valor);
-			text.append("\n");
-		}
-	};
-
-}
+    Simbolo* Find(stack<int> Escopo, string lexema)
+    {
+        while (!Escopo.empty())
+        {
+            for (Simbolo& sim : this->lstSimbolos)
+            {
+                if (sim.escopo == Escopo.top() && sim.id == lexema)
+                {
+                    return &sim;
+                }
+            }
+            Escopo.pop();
+        }
+        return nullptr;
+    }
+};
 
 class Semantico
 {
 public:
-	SymbolTable::Assembly assembly = SymbolTable::Assembly();
-	SymbolTable::Table table;
-	SymbolTable::Symbol* currentSymbol;
-	int currentScope = 0;
-
-	void executeAction(int action, const Token* token) throw (SemanticError);
+    void executeAction(int action, const Token* token) throw (SemanticError);
+    std::string getParname(string nome_call, int contpar);
+    TabelaSimbolo Tabela;
 };
 
 #endif

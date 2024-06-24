@@ -1,325 +1,1075 @@
 #include "Semantico.h"
 #include "Constants.h"
+
 #include <iostream>
 #include <stack>
-#include <stack>
-#include "TabelaSemantica.h"
+#include "semantictable.h"
 
 using namespace std;
-using namespace SymbolTable;
 
-string stringTemp;
-int vectorSize;
-int vectorPos;
-SymbolTable::Symbol* symbolOnExp;
-Temp* temp;
-Temp* temp2;
+string busca_nome_funcao;
+
+SemanticTable semanticTable;
+Simbolo simbolo;
+stack<int> stackEscopo;
+
+int escopo = 0;
+Simbolo* ptrSim;
+Simbolo* ptrForPlusMinus;
+string ptrForPlusMinusOperator = "";
+Simbolo* lastSimbol;
+Simbolo* ptrAtribuir;
+Simbolo* ptrFunc;
+int return_type = -1;
+
+list<Simbolo*> lstExp;
+list<int> lstExpType;
+list<int> lstExpTypeSave;
+list<int>::iterator it;
+list<pair<int, int>> lstOperators;
+list<pair<int, int>> lstOperatorsSave;
+list<pair<int, int>>::iterator it_par;
+pair<int, int> intPar;
+
+bool vectorExp = false;
+bool firstVar = true;
 bool flagOp = false;
-string oper;
+
+char oper;
+string operl;
+stack<string> stackRot;
+string rotIf;
+string rotFim;
+int contIf;
+
+int contparFunc = 0;
+int contpar = 0;
+string nome_call;
+string nome;
+string func;
+string store;
+string vector_load;
+string lastTemp;
+Temp* temporario;
+Temp* temporarioEsq;
+Temp* temporarioDir;
+Temp* temporarioVetor = nullptr;
+Temp* temporarioAux;
+
+string func_aux;
+
+void Simbolo::DeclararTipo(std::string t) {
+	tipo = t;
+}
+
+string newRotulo()
+{
+	contIf++;
+	string rot = "ROT" + to_string(contIf);
+	return rot;
+}
+/*
+string getParname(string nome_call, int contpar)
+{
+	for ( auto ptr : Tabela.lstSimbolos ) {
+		if ( ptr.id.substring( 0, nome_call.size() ) == nome_call && ptr.posParam == contpar )
+			return ptr.id;
+	}
+
+	//Tabela.setWar
+	return "";
+}
+*/
+void ResetaTabela()
+{
+	while (!stackEscopo.empty())
+	{
+		stackEscopo.pop();
+	}
+	while (!stackRot.empty())
+	{
+		stackRot.pop();
+	}
+	contIf = 0;
+	escopo = 0;
+	contpar = 0;
+	simbolo.vetor = false;
+	simbolo.parametro = false;
+	lstExp.clear();
+	lstExpType.clear();
+	lstOperators.clear();
+	vectorExp = false;
+	firstVar = true;
+	flagOp = false;
+}
+
+int ConvertType(string t)
+{
+	if (t == "int")
+		return 0;
+	if (t == "float")
+		return 1;
+	if (t == "char")
+		return 2;
+	if (t == "string")
+		return 3;
+	if (t == "bool")
+		return 4;
+	if (t == "double")
+		return 5;
+}
 
 void Semantico::executeAction(int action, const Token* token) throw (SemanticError)
 {
-	std::cout << "Action: " << action << ", Token: " << token->getId()
+	std::cout << "Acao: " << action << ", Token: " << token->getId();
+	std::cout << "Ação: " << action << ", Token: " << token->getId()
 		<< ", Lexema: " << token->getLexeme() << std::endl;
 
-	/*
-		1 -> Inicializa simbolo novo
-		2 -> Define o tipo do símbolo
-		3 -> Define o nome da variável / Verifica se já existe uma com o mesmo nome
-		4 -> Verifica se variável está declarada no escopo
-		5 -> Declara o nome da função / Verifica se existe função com mesmo nome
-		6 -> retorna o escopo
-		7 -> Verifica se função foi declarada
-		8 -> Especifica que variável é vetor
-		9 -> Valida tamanho do vetor
-		10 -> Seleciona posição atual do vetor
-		11 -> Aumenta tamanho do vetor quadno declarado dinamicamente
-		12 -> Especifica que é uma matriz
-		13 -> Gera o .data do assembly
-	*/
+	string lexema = token->getLexeme();
+	stack<int> temp;
+	bool setInitialized;
+	int pos;
+	int value_1;
+	int value_2;
+	int max;
+
+	if (stackEscopo.empty())
+		stackEscopo.push(escopo);
 
 	switch (action) {
 	case 1:
-		currentSymbol = new Symbol();
-
+		simbolo.DeclararTipo(lexema);
 		break;
-	case 2:
-		currentSymbol->convertAndSetSymbol(token->getLexeme());
 
+	case 2:
+		if (func != "")
+			ptrSim = Tabela.Find(stackEscopo, func + "_" + token->getLexeme());
+		else
+			ptrSim = Tabela.Find(stackEscopo, token->getLexeme());
+
+		if (ptrSim == nullptr)
+		{
+			simbolo.funcao = false;
+			if (func != "")
+				simbolo.id = func + "_" + token->getLexeme();
+			else
+				simbolo.id = token->getLexeme();
+			simbolo.escopo = stackEscopo.top();
+
+			if (simbolo.parametro)
+			{
+				simbolo.escopo = stackEscopo.top() + 1;
+			}
+
+			simbolo.posParam = contparFunc;
+
+			Tabela.lstSimbolos.push_front(simbolo);
+
+			ptrSim = &Tabela.lstSimbolos.front();
+			lastSimbol = &Tabela.lstSimbolos.front();
+
+			store = lastSimbol->id;
+		}
+		else
+		{
+			ResetaTabela();
+			throw SemanticError("Variavel com mesmo nome declarada.", token->getPosition());
+		}
 		break;
 
 	case 3:
-		if (table.find(currentScope, token->getLexeme()) != nullptr)
+		ptrSim = Tabela.Find(stackEscopo, token->getLexeme());
+		if (ptrSim != nullptr)
 		{
-			throw SemanticError("Variavel com mesmo nome declarada.", token->getPosition());
+			if (ptrSim->vetor) {
+				ResetaTabela();
+				throw SemanticError("Tentativa de utilizar vetor como variavel.", token->getPosition());
+			}
+
+			lstExp.push_back(ptrSim);
+			lstExpType.push_back(ConvertType(ptrSim->tipo));
+
+			if (!flagOp)
+				Tabela.gera_cod("LD", token->getLexeme());
+			else
+			{
+				if (oper == '+')
+					Tabela.gera_cod("ADD", token->getLexeme());
+				if (oper == '-')
+					Tabela.gera_cod("SUB", token->getLexeme());
+				flagOp = false;
+			}
+			firstVar = false;
 		}
-
-		stringTemp = token->getLexeme();
-		currentSymbol->id = stringTemp;
-		currentSymbol->idOnData = stringTemp.replace(0, 1, "");
-		currentSymbol->scope = currentScope;
-		table.symbols.push_front(currentSymbol);
-
+		else
+		{
+			ResetaTabela();
+			throw SemanticError("Tentativa de utilizacao de variavel nao existe no escopo.", token->getPosition());
+		}
 		break;
 
 	case 4:
-		if (table.find(currentScope, token->getLexeme()) == nullptr)
+		ptrAtribuir = Tabela.Find(stackEscopo, token->getLexeme());
+		if (ptrAtribuir == nullptr)
 		{
-			throw SemanticError("Tentativa de utilizacao de variavel nao existe no escopo.", token->getPosition());
+			ResetaTabela();
+			throw SemanticError("Tentativa de atribuicao de variavel nao existente.", token->getPosition());
 		}
-
-		currentSymbol = table.find(currentScope, token->getLexeme());
-
+		lstExp.clear();
+		store = token->getLexeme();
 		break;
+
 	case 5:
-		if (table.find(currentScope, "func_" + token->getLexeme()) != nullptr)
+		ptrSim = Tabela.Find(stackEscopo, token->getLexeme());
+
+		if (ptrSim != nullptr)
 		{
-			throw SemanticError("Função com mesmo nome declarada.", token->getPosition());
-		}
-
-		currentSymbol->id = "func_" + token->getLexeme();
-		currentSymbol->scope = currentScope;
-		currentSymbol->func = true;
-		table.symbols.push_front(currentSymbol);
-		currentScope++;
-
-		break;
-	case 6:
-		currentScope--;
-
-		break;
-	case 7:
-		if (table.find(currentScope, "func_" + token->getLexeme()) == nullptr)
-		{
-			throw SemanticError("Função não declarada.", token->getPosition());
-		}
-
-		break;
-	case 8:
-		currentSymbol->vector = true;
-
-		break;
-	case 9:
-		vectorSize = stoi(token->getLexeme());
-
-		if (vectorSize < 1) {
-			throw SemanticError("Tamanho de vetor não pode ser menor que 1.", token->getPosition());
-		}
-
-		currentSymbol->vectorSize = vectorSize;
-
-		break;
-	case 10:
-		vectorPos = stoi(token->getLexeme());
-
-		if (!currentSymbol->vector) {
-			throw SemanticError("Variável selecionada não é um vetor.", token->getPosition());
-		}
-		else if ((vectorPos < 0) || (vectorPos >= currentSymbol->vectorSize)) {
-			throw SemanticError("Posição do vetor inválida.", token->getPosition());
-		}
-
-		currentSymbol->vectorPos = vectorPos;
-
-		break;
-
-	case 11:
-		currentSymbol->vectorSize++;
-
-		break;
-	case 12:
-		currentSymbol->matrix = true;
-
-		break;
-	case 13:
-		for (Temp t : assembly.temp)
-		{
-			assembly.data.append(t.name);
-			assembly.data.append(" : 0\n");
-		}
-
-		for (auto it = table.symbols.rbegin(); it != table.symbols.rend(); ++it)
-		{
-			Symbol sym = **it;
-
-			assembly.data.append(sym.idOnData);
-
-			if (sym.vector)
+			if (ptrSim->inicializado == false)
 			{
-				assembly.data.append(":");
+				Tabela.setWarning(*ptrSim, "Sera utilizado lixo de memoria em acao ( var++ ou var += var )");
+			}
+		}
+		else
+		{
+			ResetaTabela();
+			throw SemanticError("Tentativa de utilizar variavel nao existente.", token->getPosition());
+		}
+		break;
 
-				for (int i = 0; i < sym.vectorSize; i++)
-				{
-					assembly.data.append(" 0,");
+	case 6:
+		setInitialized = true;
+
+		switch (semanticTable.atribType(ConvertType(lastSimbol->tipo), return_type)) {
+
+		case -1:
+			ResetaTabela();
+			throw SemanticError("Erro na atribuicao de variavel.", token->getPosition());
+		case 1:
+			Tabela.setWarning(*lastSimbol, "Perda de precisao");
+			break;
+		}
+
+		for (Simbolo* ptr : lstExp)
+		{
+			if (ptr->escopo == lastSimbol->escopo && ptr->id == lastSimbol->id)
+			{
+				if (lastSimbol->inicializado == false) {
+					Tabela.setWarning(*lastSimbol, "Utilizacao da variavel na atribuicao da mesma");
 				}
-
-				assembly.data.replace((assembly.data.length() - 1), assembly.data.length(), "\n");
+				setInitialized = false;
 			}
 			else
 			{
-				assembly.data.append(": 0\n");
+				ptr->usado = true;
+				if (!ptr->inicializado)
+					Tabela.setWarning(*ptr);
+			}
+		}
+		if (setInitialized)
+		{
+			lastSimbol->inicializado = true;
+		}
+
+		lstExp.clear();
+		break;
+
+	case 7:
+
+		if (Tabela.Procurar(stackEscopo, token->getLexeme()))
+		{
+			ResetaTabela();
+			throw SemanticError("Variavel com mesmo nome declarada", token->getPosition());
+		}
+
+		simbolo.funcao = true;
+		simbolo.parametro = false;
+		simbolo.vetor = false;
+		simbolo.id = token->getLexeme();
+		simbolo.escopo = stackEscopo.top();
+		func = token->getLexeme();
+		Tabela.lstSimbolos.push_front(simbolo);
+		ptrFunc = &Tabela.lstSimbolos.front();
+
+		simbolo.parametro = true;
+		break;
+
+	case 8:
+		simbolo.parametro = false;
+		ptrFunc->posParam = contparFunc;
+		contparFunc = 0;
+		break;
+
+	case 9:
+		ptrSim->vetor = true;
+		break;
+
+	case 10:
+		escopo++;
+		stackEscopo.push(escopo);
+		break;
+
+	case 11:
+		if (stackEscopo.empty())
+		{
+			ResetaTabela();
+			throw SemanticError("} inesperado", token->getPosition());
+		}
+		stackEscopo.pop();
+		break;
+
+	case 12:
+		if (lastSimbol == nullptr)
+		{
+			ResetaTabela();
+			throw SemanticError("Vetor inesperado", token->getPosition());
+		}
+		lastSimbol->posVetor = stoi(token->getLexeme());
+		break;
+
+	case 13:
+		temp = stackEscopo;
+		while (!temp.empty())
+		{
+			for (Simbolo& sim : Tabela.lstSimbolos)
+			{
+				if (sim.escopo == temp.top() && sim.id == lexema && sim.funcao == true)
+				{
+					sim.usado = true;
+					ptrFunc = Tabela.Find(temp, sim.id);
+					return;
+				}
+			}
+			temp.pop();
+		}
+		ResetaTabela();
+		throw SemanticError("Funcao inexistene no escopo. ", token->getPosition());
+		break;
+
+	case 14: // GERACAO DE CODIGO ASSEMBLY - Saida de dados
+		Tabela.gera_cod("LDI", token->getLexeme());
+		Tabela.gera_cod("STO", "$out_port");
+		break;
+
+	case 15:
+		if (!ptrAtribuir->vetor)
+		{
+			ResetaTabela();
+			throw SemanticError("Tentativa de leitura de vetor em outro tipo de variavel.", token->getPosition());
+		}
+		ptrAtribuir->usado = true;
+		Tabela.gera_cod("STO", "$indr");
+		Tabela.gera_cod("LDV", ptrAtribuir->id);
+		Tabela.gera_cod("STO", "$out_port");
+
+		vectorExp = false;
+		break;
+
+	case 16:
+		setInitialized = true;
+
+
+		switch (semanticTable.atribType(ConvertType(ptrAtribuir->tipo), return_type)) {
+		case -1:
+			ResetaTabela();
+			throw SemanticError("Erro na atribuicao de variavel.", token->getPosition());
+		case 1:
+			Tabela.setWarning(*lastSimbol, "Perda de precisao");
+		}
+
+		for (Simbolo* ptr : lstExp)
+		{
+			if (ptrAtribuir->escopo == ptr->escopo && ptrAtribuir->id == ptr->id)
+			{
+				if (ptrAtribuir->inicializado == false)
+				{
+					Tabela.setWarning(*ptrAtribuir, "Utilizacao da variavel na atribuicao da mesma");
+					setInitialized = false;
+				}
+			}
+			else
+			{
+				if (!ptr->inicializado)
+					Tabela.setWarning(*ptr);
+				ptr->usado = true;
 			}
 		}
 
+		if (setInitialized)
+		{
+			ptrAtribuir->inicializado = true;
+		}
+		lstExp.clear();
 		break;
 
-	case 14:
-		currentSymbol->initialized = true;
-		assembly.gera_cod("LD", "$in_port");
-		assembly.gera_cod("STO", currentSymbol->idOnData);
-
-		break;
-	case 15:
-		temp = assembly.getTemp();
-		temp2 = assembly.getTemp();
-
-		assembly.gera_cod("LDI", to_string(currentSymbol->vectorPos));
-		assembly.gera_cod("STO", temp->name);
-		assembly.gera_cod("LD", "$in_port");
-		assembly.gera_cod("STO", temp2->name);
-		assembly.gera_cod("LD", temp->name);
-		assembly.gera_cod("STO", "$indr");
-		assembly.gera_cod("LD", temp2->name);
-		assembly.gera_cod("STOV", currentSymbol->idOnData);
-
-		temp->livre = true;
-		temp2->livre = true;
-
-		break;
-	case 16:
-		currentSymbol = nullptr;
-
-		break;
 
 	case 17:
-		if (currentSymbol != nullptr) {
-			if (currentSymbol->vector) {
-				temp = assembly.getTemp();
-				temp2 = assembly.getTemp();
+		switch (semanticTable.atribType(ConvertType(ptrAtribuir->tipo), return_type))
+		{
+		case -1:
+			ResetaTabela();
+			throw SemanticError("Erro ao tentar atribuir funcao em variavel", token->getPosition());
 
-				assembly.gera_cod("LDI", to_string(currentSymbol->vectorPos));
-				assembly.gera_cod("STO", "$indr");
-				assembly.gera_cod("LDV", currentSymbol->idOnData);
-				assembly.gera_cod("STO", "$out_port");
-
-				temp->livre = true;
-				temp2->livre = true;
-			}
-			else {
-				assembly.gera_cod("LD", currentSymbol->idOnData);
-				assembly.gera_cod("STO", "$out_port");
-			}
-		}
-		else {
-			// Receber o valor de uma expressão aritmética (resolver depois)
+		case 1:
+			Tabela.setWarning(*ptrAtribuir, "Perda de precisao");
 		}
 
 		break;
 
 	case 18:
-		if (currentSymbol->vector) {
-			temp = assembly.getTemp();
-			temp2 = assembly.getTemp();
-
-			assembly.gera_cod("LDI", to_string(currentSymbol->vectorPos));
-			assembly.gera_cod("STO", temp->name);
-
-			if (symbolOnExp != nullptr) {
-				if (symbolOnExp->vector) {
-					assembly.gera_cod("LDI", to_string(symbolOnExp->vectorPos));
-					assembly.gera_cod("STO", "$indr");
-					assembly.gera_cod("LDV", symbolOnExp->idOnData);
-				}
-				//else {
-				//	assembly.gera_cod("LD", symbolOnExp->idOnData);
-				//}
-			}
-			else {
-				assembly.gera_cod("LDI", token->getLexeme());
-			}
-
-			assembly.gera_cod("STO", temp2->name);
-			assembly.gera_cod("LD", temp->name);
-			assembly.gera_cod("STO", "$indr");
-			assembly.gera_cod("LD", temp2->name);
-			assembly.gera_cod("STOV", currentSymbol->idOnData);
-
-			temp->livre = true;
-			temp2->livre = true;
+		if (return_type != 4)
+		{
+			ResetaTabela();
+			throw SemanticError("Boolean esperado na expressao", token->getPosition());
 		}
-		else {
-			if (symbolOnExp != nullptr) {
-				if (symbolOnExp->vector) {
-					assembly.gera_cod("LDI", to_string(symbolOnExp->vectorPos));
-					assembly.gera_cod("STO", "$indr");
-					assembly.gera_cod("LDV", symbolOnExp->idOnData);
-				}
-				//else {
-				//	assembly.gera_cod("LD", symbolOnExp->idOnData);
-				//}
-			}
-			else {
-				assembly.gera_cod("LDI", token->getLexeme());
-			}
-
-			assembly.gera_cod("STO", currentSymbol->idOnData);
-		}
-
-		symbolOnExp = nullptr;
-
 		break;
-
 	case 19:
-		symbolOnExp = table.find(currentScope, token->getLexeme());
-
-		if (symbolOnExp == nullptr)
+		for (Simbolo* x : lstExp)
 		{
-			throw SemanticError("Tentativa de utilizacao de variavel nao existe no escopo.", token->getPosition());
-		}
-
-		if (!flagOp)
-			assembly.gera_cod("LD", symbolOnExp->idOnData);
-		else
-		{
-			if (oper == "+")
-				assembly.gera_cod("ADD", symbolOnExp->idOnData);
-			else if (oper == "-")
-				assembly.gera_cod("SUB", symbolOnExp->idOnData);
-			flagOp = false;
+			x->usado = true;
 		}
 		break;
-
 	case 20:
-		vectorPos = stoi(token->getLexeme());
+		Tabela.setUnusedWarning();
+		ResetaTabela();
 
-		if (!symbolOnExp->vector) {
-			throw SemanticError("Variável selecionada não é um vetor.", token->getPosition());
+		Tabela.data.clear();
+		Tabela.data.append(".data\n");
+
+		for (auto t : Tabela.temp)
+		{
+			Tabela.data.append(t.name);
+			Tabela.data.append(" : 0\n");
 		}
-		else if ((vectorPos < 0) || (vectorPos >= symbolOnExp->vectorSize)) {
-			throw SemanticError("Posição do vetor inválida.", token->getPosition());
+
+		for (auto it = Tabela.lstSimbolos.rbegin(); it != Tabela.lstSimbolos.rend(); ++it)
+		{
+			Simbolo sim = *it;
+			if (sim.vetor)
+			{
+				Tabela.data.append(sim.id);
+				Tabela.data.append(":");
+				for (int i = 0; i < sim.posVetor; i++)
+				{
+					Tabela.data.append(" 0,");
+				}
+				Tabela.data = Tabela.data.substr(0, Tabela.data.size() - 1);
+				//Tabela.data.erase(Tabela.data.back());
+				Tabela.data.append("\n");
+			}
+			else
+			{
+				Tabela.data.append(sim.id);
+				Tabela.data.append(": 0\n");
+			}
 		}
 
-		symbolOnExp->vectorPos = vectorPos;
-
+		Tabela.data.append("\n.text\n");
+		Tabela.data.append("JMP main\n");
+		Tabela.data.append(Tabela.assembly);
 		break;
 
 	case 21:
+		ptrSim = Tabela.Find(stackEscopo, token->getLexeme());
+		if (ptrSim != nullptr)
+		{
+			ptrSim->usado = true;
+
+			if (ptrSim->vetor)
+			{
+				ResetaTabela();
+				throw SemanticError("Tentativa de leitura de vetor", token->getPosition());
+			}
+
+			if (ptrSim->inicializado == false)
+			{
+				Tabela.setWarning(*ptrSim);
+			}
+			Tabela.gera_cod("LD", token->getLexeme());
+			Tabela.gera_cod("STO", "$out_port");
+		}
+		else
+		{
+			ResetaTabela();
+			throw SemanticError("Tentativa de leitura de variavel inexistente.", token->getPosition());
+		}
+		break;
+
+	case 22:
+		ptrSim = Tabela.Find(stackEscopo, token->getLexeme());
+
+		if (ptrSim->vetor)
+		{
+			ResetaTabela();
+			throw SemanticError("Tentativa de entrada de dados em Vetor", token->getPosition());
+		}
+		if (ptrSim != nullptr)
+		{
+			ptrSim->inicializado = true;
+			Tabela.gera_cod("LD", "$in_port");
+			Tabela.gera_cod("STO", ptrSim->id);
+		}
+		else
+		{
+			ResetaTabela();
+			throw SemanticError("Entrada de dados em variavel inexistente.", token->getPosition());
+		}
+		break;
+
+	case 25:
+		Tabela.gera_cod("STO", "$indr");
+		Tabela.gera_cod("LD", "$in_port");
+		Tabela.gera_cod("STOV", store);
+		break;
+
+	case 26:
+		if (!ptrAtribuir->vetor)
+		{
+			ResetaTabela();
+			throw SemanticError("Tentativa de atribuir variavel como vetor.", token->getPosition());
+		}
+		vectorExp = true;
+		break;
+
+	case 27:
+		lstExpTypeSave = lstExpType;
+		lstOperatorsSave = lstOperators;
+		lstExp.clear();
+		lstExpType.clear();
+		lstOperators.clear();
+		break;
+
+	case 28:
+		lstExpType = lstExpTypeSave;
+		lstOperators = lstOperatorsSave;
+		lstExpTypeSave.clear();
+		lstOperatorsSave.clear();
+		lstExpType.push_back(return_type);
+		break;
+
+	case 29:
+		if (ptrAtribuir->vetor)
+		{
+			ResetaTabela();
+			throw SemanticError("Tentativa de atribuir vetor como variavel.", token->getPosition());
+		}
+		break;
+
+	case 30:
+		ptrSim = Tabela.Find(stackEscopo, token->getLexeme());
+		if (ptrSim == nullptr) {
+			ResetaTabela();
+			throw SemanticError("Tentativa de utilizar vetor inexistente.", token->getPosition());
+		}
+		if (!ptrSim->vetor) {
+			ResetaTabela();
+			throw SemanticError("Tentativa de utilizar variavel como vetor.", token->getPosition());
+		}
+		if (!ptrSim->inicializado)
+			Tabela.setWarning(*ptrSim, "Uso de variavel nao inicializada.");
+		ptrSim->usado = true;
+		flagOp = false;
+
+		if (!firstVar)
+		{
+			temporarioAux = Tabela.GetTemp();
+			temporarioAux->livre = false;
+			Tabela.gera_cod("STO", temporarioAux->name);
+		}
+
+		vector_load = token->getLexeme();
+		break;
+
+		// Valores
+	case 31:
+		firstVar = false;
+		lstExpType.push_back(0); // Int
+		if (!flagOp)
+		{
+			Tabela.gera_cod("LDI", token->getLexeme());
+		}
+		else
+		{
+			if (oper == '+')
+				Tabela.gera_cod("ADDI", token->getLexeme());
+			if (oper == '-')
+				Tabela.gera_cod("SUBI", token->getLexeme());
+			flagOp = false;
+		}
+		break;
+	case 32:
+		firstVar = false;
+		lstExpType.push_back(1); // Float
+		break;
+	case 33:
+		firstVar = false;
+		//lstExpType.push_back(3); // Double
+		break;
+	case 34:
+		firstVar = false;
+		lstExpType.push_back(2); // Char
+		break;
+	case 35:
+		firstVar = false;
+		lstExpType.push_back(3); // String
+		break;
+	case 36:
+		firstVar = false;
+		lstExpType.push_back(4); // Boolean
+		break;
+
+		// Peso das Expressões
+	case 40:
+		intPar.first = 0;
+		intPar.second = 0;
+		lstOperators.push_back(intPar); // Mais ( + )
+		oper = '+';
 		flagOp = true;
-		oper = token->getLexeme();
+		break;
+	case 41:
+		intPar.first = 1;
+		intPar.second = 0;
+		lstOperators.push_back(intPar); // Menos ( - )
+		oper = '-';
+		flagOp = true;
+		break;
+	case 42:
+		intPar.first = 2;
+		intPar.second = 1;
+		lstOperators.push_back(intPar); // Vezes ( * )
+		break;
+	case 43:
+		intPar.first = 3;
+		intPar.second = 1;
+		lstOperators.push_back(intPar); // Divisão ( / )
+		break;
+	case 44:
+		intPar.first = 4;
+		intPar.second = 1;
+		lstOperators.push_back(intPar); // MOD ( % )
+		break;
+	case 45:
+		operl = token->getLexeme();
+		temporarioEsq = Tabela.GetTemp();
+		temporarioEsq->livre = false;
+		Tabela.gera_cod("STO", temporarioEsq->name);
+		intPar.first = 5;
+		intPar.second = 2;
+		lstOperators.push_back(intPar); // Relacionais ( >, <,  <=, >=, ==, != )
+		break;
+	case 46:
+		temporarioDir = Tabela.GetTemp();
+		temporarioDir->livre = false;
+		Tabela.gera_cod("STO", temporarioDir->name);
+		Tabela.gera_cod("LD", temporarioEsq->name);
+		Tabela.gera_cod("SUB", temporarioDir->name);
+
+		temporarioEsq->livre = true;
+		temporarioDir->livre = true;
 
 		break;
-	case 22:
-		//if (!flagOp)
-		//	assembly.gera_cod("LDI", token->getLexeme());
-		if (flagOp)
+	case 47:
+
+		//ponteiro para lista
+		// Parenteses
+		break;
+
+		// Leitura da expressão
+	case 51:
+		max = 0;
+		return_type = 0;
+
+		pos = 0;
+		std::cout << "Lista de tipos: \n";
+		for (int i : lstExpType)
 		{
-			if (oper == "+")
-				assembly.gera_cod("ADDI", token->getLexeme());
-			else if (oper == "-")
-				assembly.gera_cod("SUBI", token->getLexeme());
-			flagOp = false;
+			std::cout << "Posicao: " << pos << " Tipo: " << i << "\n";
+			pos++;
+		}
+
+		pos = 0;
+		std::cout << "Lista de operadores: \n";
+		for (pair<int, int> i : lstOperators)
+		{
+			std::cout << "Operador: " << pos << " Operador: " << i.first << "\n";
+			pos++;
+		}
+
+		while (lstOperators.size() != 0)
+		{
+			if (lstOperators.size() == 1) // ULTIMA ITERACAO
+			{
+				value_1 = lstExpType.front();
+				value_2 = lstExpType.back();
+				intPar = lstOperators.front();
+				return_type = semanticTable.resultType(value_1, value_2, intPar.first);
+				lstOperators.clear();
+				lstExpType.clear();
+				if (return_type == -1)
+				{
+					ResetaTabela();
+					throw SemanticError("Erro na expressao, tipos invalidos.", token->getPosition());
+				}
+				lstExpType.push_back(return_type);
+			}
+
+			if (lstOperators.size() > 1)
+			{
+				// Pega a expressão com maior prioridade
+				intPar.first = -1;
+				intPar.second = -1;
+				for (pair<int, int> i : lstOperators)
+				{
+					if (i.second > intPar.second)
+						intPar = i;
+				}
+				// Pega a posição da primeira expressão com maior prioridade
+				pos = 0;
+				for (pair<int, int> i : lstOperators)
+				{
+					if (intPar.second == i.second)
+						break;
+					pos++;
+				}
+				it_par = lstOperators.begin();
+				advance(it_par, pos);
+				lstOperators.erase(it_par);
+
+				it = lstExpType.begin();
+				advance(it, pos);
+				value_1 = *it; // Pega o valor na mesma posição na lista de tipos
+				it = lstExpType.erase(it);
+				value_2 = *it; // Pega o proximo valor na lista de tipos
+				it = lstExpType.erase(it);
+				return_type = semanticTable.resultType(value_1, value_2, intPar.first); // Verifica a expressão ( valor_1, max (operador), valor_2 )
+
+				if (return_type == -1)
+				{
+					ResetaTabela();
+					throw SemanticError("Erro na expressao, tipos invalidos.", token->getPosition());
+				}
+				lstExpType.insert(it, return_type);
+			}
+		}
+
+		if (lstExpType.size() > 1)
+		{
+			ResetaTabela();
+			throw SemanticError("Erro inexperado na expressao, mais de um valor no retorno", token->getPosition());
+		}
+		lstExpType.clear();
+		break;
+
+	case 52:
+		firstVar = true;
+		if (vectorExp)
+		{
+			temporario = Tabela.GetTemp();
+			Tabela.gera_cod("STO", temporario->name);
+			Tabela.gera_cod("LD", temporarioVetor->name);
+			Tabela.gera_cod("STO", "$indr");
+			Tabela.gera_cod("LD", temporario->name);
+			Tabela.gera_cod("STOV", store);
+		}
+		else
+		{
+			Tabela.gera_cod("STO", store);
+		}
+		if (temporarioVetor != nullptr)
+			temporarioVetor->livre = true;
+
+		vectorExp = false;
+		break;
+
+	case 53:
+
+		for (Simbolo* ptr : lstExp)
+		{
+			if (ptr->inicializado == false)
+			{
+				Tabela.setWarning(*ptr, "Uso de variavel nao inicializada!");
+			}
+			ptr->usado = true;
+		}
+		temporarioVetor = Tabela.GetTemp();
+		Tabela.gera_cod("STO", temporarioVetor->name); // expressao da esquerda
+		temporarioVetor->livre = false;
+		break;
+
+	case 54:
+		for (Simbolo* ptr : lstExp)
+		{
+			if (ptr->inicializado == false)
+			{
+				Tabela.setWarning(*ptr, "Uso de variavel nao inicializada!");
+			}
+			ptr->usado = true;
+		}
+		Tabela.gera_cod("STO", "$indr");
+		Tabela.gera_cod("LDV", vector_load);
+		if (!firstVar)
+		{
+			temporario = Tabela.GetTemp();
+			Tabela.gera_cod("STO", temporario->name);
+			Tabela.gera_cod("LD", temporarioAux->name);
+			if (oper == '+')
+			{
+				Tabela.gera_cod("ADD", temporario->name);
+			}
+			if (oper == '-')
+			{
+				Tabela.gera_cod("SUB", temporario->name);
+			}
+			temporario->livre = true;
+			temporarioAux->livre = true;
+		}
+		firstVar = false;
+		break;
+
+	case 55:
+
+		rotIf = newRotulo();
+		stackRot.push(rotIf);
+
+		if (operl == ">")
+		{
+			Tabela.gera_cod("BLE", rotIf);
+		}
+		if (operl == "<")
+		{
+			Tabela.gera_cod("BGE", rotIf);
+		}
+		if (operl == "==")
+		{
+			Tabela.gera_cod("BNE", rotIf);
+		}
+		if (operl == "!=")
+		{
+			Tabela.gera_cod("BEQ", rotIf);
+		}
+		if (operl == ">=")
+		{
+			Tabela.gera_cod("BLT", rotIf);
+		}
+		if (operl == "<=")
+		{
+			Tabela.gera_cod("BGT", rotIf);
 		}
 
 		break;
-	};
+
+	case 56:
+		rotIf = stackRot.top();
+		stackRot.pop();
+		Tabela.gera_cod(rotIf + ":", " ");
+		break;
+
+	case 57:
+		if (stackRot.empty())
+		{
+			throw SemanticError("Erro no else ", token->getPosition());
+		}
+		rotIf = stackRot.top();
+		stackRot.pop();
+		//rotIf = pop ();
+		rotFim = newRotulo();
+		Tabela.gera_cod("JMP", rotFim);
+		stackRot.push(rotFim);
+		Tabela.gera_cod(rotIf + ":", " ");
+		break;
+
+	case 58:
+		rotIf = newRotulo();
+		stackRot.push(rotIf);
+		Tabela.gera_cod(rotIf + ":", "");
+		break;
+
+	case 59:
+		rotFim = newRotulo();
+		stackRot.push(rotFim);
+
+		if (operl == ">")
+		{
+			Tabela.gera_cod("BLE", rotFim);
+		}
+		if (operl == "<")
+		{
+			Tabela.gera_cod("BGE", rotFim);
+		}
+		if (operl == "==")
+		{
+			Tabela.gera_cod("BNE", rotFim);
+		}
+		if (operl == "!=")
+		{
+			Tabela.gera_cod("BEQ", rotFim);
+		}
+		if (operl == ">=")
+		{
+			Tabela.gera_cod("BLT", rotFim);
+		}
+		if (operl == "<=")
+		{
+			Tabela.gera_cod("BGT", rotFim);
+		}
+
+		break;
+
+	case 60:
+		rotIf = stackRot.top();
+		stackRot.pop();
+		rotFim = stackRot.top();
+		stackRot.pop();
+		Tabela.gera_cod("JMP", rotFim);
+		Tabela.gera_cod(rotIf + ":", "");
+		break;
+
+	case 61:
+		rotIf = newRotulo();
+		stackRot.push(rotIf);
+		Tabela.gera_cod(rotIf + ":", "");
+		break;
+
+	case 62:
+
+		rotFim = stackRot.top();
+		stackRot.pop();
+		if (operl == ">")
+		{
+			Tabela.gera_cod("BLE", rotFim);
+		}
+		if (operl == "<")
+		{
+			Tabela.gera_cod("BGE", rotFim);
+		}
+		if (operl == "==")
+		{
+			Tabela.gera_cod("BNE", rotFim);
+		}
+		if (operl == "!=")
+		{
+			Tabela.gera_cod("BEQ", rotFim);
+		}
+		if (operl == ">=")
+		{
+			Tabela.gera_cod("BLT", rotFim);
+		}
+		if (operl == "<=")
+		{
+			Tabela.gera_cod("BGT", rotFim);
+		}
+		break;
+
+	case 63: // - Gera o rótulo de início da rotina
+
+		nome = token->getLexeme();
+		Tabela.gera_cod("ROT_" + nome, "");
+		break;
+
+	case 64: // - Gera retorno ao ponto de chamada da rotina
+		Tabela.gera_cod("RETURN", "0");
+		break;
+
+	case 65: // – Armazena o nome da rotina a ser chamada e inicializa o
+		//contador de parâmetros
+		nome_call = token->getLexeme();
+		contpar = 1;
+		break;
+
+	case 66: // – Copia os valores passados por parâmetros para as
+		for (auto ptr : Tabela.lstSimbolos) {
+			func_aux = ptr.id;
+			func_aux = func_aux.substr(0, nome_call.size());
+			cout << ptr.id;
+			if (func_aux == nome_call && contpar == ptr.posParam && ptr.funcao == 0)
+			{
+				busca_nome_funcao = ptr.id;
+			}
+		}
+
+		ptrSim = Tabela.Find(stackEscopo, token->getLexeme());
+
+		if (busca_nome_funcao != "")
+		{
+			if (ptrSim == nullptr)
+			{
+				Tabela.gera_cod("LDI", token->getLexeme()); // ver se é valor ou id
+			}
+			else
+			{
+				Tabela.gera_cod("LD", token->getLexeme()); // ver se é valor ou id
+			}
+			Tabela.gera_cod("STO", busca_nome_funcao);
+		}
+
+		func_aux = "";
+		busca_nome_funcao = "";
+		contpar++;
+		break;
+
+	case 67: // Faz a chamada da rotina
+		if (contpar - 1 < ptrFunc->posParam)
+		{
+			throw SemanticError("Faltou parametros na funcao " + ptrFunc->id, token->getPosition());
+		}
+		if (contpar - 1 > ptrFunc->posParam)
+		{
+			Tabela.setWarning(*ptrFunc, "Muitos parametros na funcao");
+		}
+		Tabela.gera_cod("CALL", "_" + nome_call);
+		break;
+
+	case 68:
+		func = "";
+		Tabela.gera_cod("main: ", "");
+		break;
+
+	case 69:
+		contparFunc += 1;
+		break;
+
+
+	case 70:
+		ptrForPlusMinus = Tabela.Find(stackEscopo, token->getLexeme());
+
+		if (ptrForPlusMinus == nullptr)
+		{
+			ResetaTabela();
+			throw SemanticError("Tentativa de utilizar variavel nao existente.", token->getPosition());
+
+		}
+		else if (ptrForPlusMinus->inicializado == false)
+		{
+			Tabela.setWarning(*ptrForPlusMinus, "Sera utilizado lixo de memoria em acao ( var++ ou var += var )");
+		}
+
+		break;
+	case 71:
+		ptrForPlusMinusOperator = token->getLexeme();
+
+		break;
+	case 72:
+		if ((ptrForPlusMinus == nullptr) || (ptrForPlusMinusOperator == "")) {
+			ResetaTabela();
+			throw SemanticError("Variavel de soma ou subtração do for não existente.", token->getPosition());
+		}
+
+		Tabela.gera_cod("LD", ptrForPlusMinus->id);
+
+		if (ptrForPlusMinusOperator == "+") {
+			Tabela.gera_cod("ADDI", "1");
+		}
+		else if (ptrForPlusMinusOperator == "-") {
+			Tabela.gera_cod("SUBI", "1");
+		}
+		else {
+			throw SemanticError("Operador não reconhecido.", token->getPosition());
+		}
+
+		Tabela.gera_cod("STO", ptrForPlusMinus->id);
+
+		ptrForPlusMinus = nullptr;
+		ptrForPlusMinusOperator = "";
+
+		break;
+	}
 }

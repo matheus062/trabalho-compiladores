@@ -1,8 +1,15 @@
-<?php 
+<?php
 
-int $a[1];
-int $b;
+int main(){
 
-$b = 2;
+ int b;
 
-$a[0] = 1;
+ b = 10;
+
+ while (b > 5) {
+	b = b - 1;
+	php_out << b;
+}
+
+ return 0;
+}

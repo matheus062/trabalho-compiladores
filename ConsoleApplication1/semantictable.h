@@ -1,9 +1,11 @@
 
-#ifndef TABELASEMANTICA_H
-#define TABELASEMANTICA_H
+#ifndef SEMANTICTABLE_H
+#define SEMANTICTABLE_H
 #include <vector>
 
-class TabelaSemantica
+
+
+class SemanticTable
 {
 public:
     const int ERR = -1;

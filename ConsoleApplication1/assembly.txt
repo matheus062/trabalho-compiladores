@@ -1,16 +1,26 @@
 .data
 temp0 : 0
 temp1 : 0
-a: 0
 b: 0
+
 .text
-LDI 2
+JMP main
+main:  
+LDI 10
 STO b
-LDI 0
+ROT1: 
+LD b
 STO temp0
-LDI 1
+LDI 5
 STO temp1
 LD temp0
-STO $indr
-LD temp1
-STOV a
+SUB temp1
+BGE ROT2
+LD b
+SUBI 1
+STO b
+LD b
+STO $out_port
+JMP ROT1
+ROT2: 
+LDI 0
