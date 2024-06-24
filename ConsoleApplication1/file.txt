@@ -2,14 +2,16 @@
 
 int main(){
 
- int b;
+	int a;
+	int b;
 
- b = 10;
+	a = 5;
+	b = 0;
 
- while (b > 5) {
-	b = b - 1;
-	php_out << b;
-}
+	do {
+		b = b + 1;
+		php_out << b;
+	} while (a >= b);
 
- return 0;
+	return 0;
 }

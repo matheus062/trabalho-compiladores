@@ -1,43 +1,7 @@
-﻿  ConsoleApplication1.cpp
-C:\dev\TrabalhoCompiladores\ConsoleApplication1\Lexico.h(18,43): warning C4290: especificação de exceção de C++ ignorada exceto para indicar que a função não é __declspec(nothrow)
-  (compilando o arquivo fonte 'ConsoleApplication1.cpp')
-  
-C:\dev\TrabalhoCompiladores\ConsoleApplication1\Semantico.h(152,76): warning C4290: especificação de exceção de C++ ignorada exceto para indicar que a função não é __declspec(nothrow)
-  (compilando o arquivo fonte 'ConsoleApplication1.cpp')
-  
-C:\dev\TrabalhoCompiladores\ConsoleApplication1\Sintatico.h(23,82): warning C4290: especificação de exceção de C++ ignorada exceto para indicar que a função não é __declspec(nothrow)
-  (compilando o arquivo fonte 'ConsoleApplication1.cpp')
-  
-C:\dev\TrabalhoCompiladores\ConsoleApplication1\Sintatico.h(32,37): warning C4290: especificação de exceção de C++ ignorada exceto para indicar que a função não é __declspec(nothrow)
-  (compilando o arquivo fonte 'ConsoleApplication1.cpp')
-  
-  Constants.cpp
-  Lexico.cpp
-C:\dev\TrabalhoCompiladores\ConsoleApplication1\Lexico.h(18,43): warning C4290: especificação de exceção de C++ ignorada exceto para indicar que a função não é __declspec(nothrow)
-  (compilando o arquivo fonte 'Lexico.cpp')
-  
-C:\dev\TrabalhoCompiladores\ConsoleApplication1\Lexico.cpp(13,47): warning C4290: especificação de exceção de C++ ignorada exceto para indicar que a função não é __declspec(nothrow)
-  Semantico.cpp
+﻿  Semantico.cpp
 C:\dev\TrabalhoCompiladores\ConsoleApplication1\Semantico.h(152,76): warning C4290: especificação de exceção de C++ ignorada exceto para indicar que a função não é __declspec(nothrow)
   (compilando o arquivo fonte 'Semantico.cpp')
   
 C:\dev\TrabalhoCompiladores\ConsoleApplication1\Semantico.cpp(122,83): warning C4290: especificação de exceção de C++ ignorada exceto para indicar que a função não é __declspec(nothrow)
-  Sintatico.cpp
-C:\dev\TrabalhoCompiladores\ConsoleApplication1\Lexico.h(18,43): warning C4290: especificação de exceção de C++ ignorada exceto para indicar que a função não é __declspec(nothrow)
-  (compilando o arquivo fonte 'Sintatico.cpp')
-  
-C:\dev\TrabalhoCompiladores\ConsoleApplication1\Semantico.h(152,76): warning C4290: especificação de exceção de C++ ignorada exceto para indicar que a função não é __declspec(nothrow)
-  (compilando o arquivo fonte 'Sintatico.cpp')
-  
-C:\dev\TrabalhoCompiladores\ConsoleApplication1\Sintatico.h(23,82): warning C4290: especificação de exceção de C++ ignorada exceto para indicar que a função não é __declspec(nothrow)
-  (compilando o arquivo fonte 'Sintatico.cpp')
-  
-C:\dev\TrabalhoCompiladores\ConsoleApplication1\Sintatico.h(32,37): warning C4290: especificação de exceção de C++ ignorada exceto para indicar que a função não é __declspec(nothrow)
-  (compilando o arquivo fonte 'Sintatico.cpp')
-  
-C:\dev\TrabalhoCompiladores\ConsoleApplication1\Sintatico.cpp(3,89): warning C4290: especificação de exceção de C++ ignorada exceto para indicar que a função não é __declspec(nothrow)
-C:\dev\TrabalhoCompiladores\ConsoleApplication1\Sintatico.cpp(26,44): warning C4290: especificação de exceção de C++ ignorada exceto para indicar que a função não é __declspec(nothrow)
-C:\dev\TrabalhoCompiladores\ConsoleApplication1\Sintatico.cpp(32,48): warning C4267: '=': conversão de 'size_t' para 'int', possível perda de dados
-  Gerando Código...
 C:\dev\TrabalhoCompiladores\ConsoleApplication1\Semantico.cpp(120): warning C4715: 'ConvertType': nem todos os caminhos de controle retornam um valor
   ConsoleApplication1.vcxproj -> C:\dev\TrabalhoCompiladores\x64\Debug\ConsoleApplication1.exe

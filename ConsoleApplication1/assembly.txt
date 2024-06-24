@@ -1,26 +1,27 @@
 .data
 temp0 : 0
 temp1 : 0
+a: 0
 b: 0
 
 .text
 JMP main
 main:  
-LDI 10
+LDI 5
+STO a
+LDI 0
 STO b
 ROT1: 
 LD b
-STO temp0
-LDI 5
-STO temp1
-LD temp0
-SUB temp1
-BGE ROT2
-LD b
-SUBI 1
+ADDI 1
 STO b
 LD b
 STO $out_port
-JMP ROT1
-ROT2: 
+LD a
+STO temp0
+LD b
+STO temp1
+LD temp0
+SUB temp1
+BGE ROT1
 LDI 0

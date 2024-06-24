@@ -933,29 +933,29 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 
 		rotFim = stackRot.top();
 		stackRot.pop();
-		if (operl == ">")
-		{
-			Tabela.gera_cod("BLE", rotFim);
-		}
 		if (operl == "<")
-		{
-			Tabela.gera_cod("BGE", rotFim);
-		}
-		if (operl == "==")
-		{
-			Tabela.gera_cod("BNE", rotFim);
-		}
-		if (operl == "!=")
-		{
-			Tabela.gera_cod("BEQ", rotFim);
-		}
-		if (operl == ">=")
 		{
 			Tabela.gera_cod("BLT", rotFim);
 		}
-		if (operl == "<=")
+		if (operl == ">")
 		{
 			Tabela.gera_cod("BGT", rotFim);
+		}
+		if (operl == "!=")
+		{
+			Tabela.gera_cod("BNE", rotFim);
+		}
+		if (operl == "==")
+		{
+			Tabela.gera_cod("BEQ", rotFim);
+		}
+		if (operl == "<=")
+		{
+			Tabela.gera_cod("BLE", rotFim);
+		}
+		if (operl == ">=")
+		{
+			Tabela.gera_cod("BGE", rotFim);
 		}
 		break;
 
