@@ -150,10 +150,14 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 		if (ptrSim == nullptr)
 		{
 			simbolo.funcao = false;
-			if (func != "")
+			if (func != "") {
 				simbolo.id = func + "_" + token->getLexeme();
-			else
+				simbolo.using_function_name = func;
+			}
+			else {
 				simbolo.id = token->getLexeme();
+			}
+				
 			simbolo.escopo = stackEscopo.top();
 
 			if (simbolo.parametro)
@@ -190,13 +194,13 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 			lstExpType.push_back(ConvertType(ptrSim->tipo));
 
 			if (!flagOp)
-				Tabela.gera_cod("LD", token->getLexeme());
+				Tabela.gera_cod("LD", ptrSim->id);
 			else
 			{
 				if (oper == '+')
-					Tabela.gera_cod("ADD", token->getLexeme());
+					Tabela.gera_cod("ADD", ptrSim->id);
 				if (oper == '-')
-					Tabela.gera_cod("SUB", token->getLexeme());
+					Tabela.gera_cod("SUB", ptrSim->id);
 				flagOp = false;
 			}
 			firstVar = false;
@@ -216,7 +220,7 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 			throw SemanticError("Tentativa de atribuicao de variavel nao existente.", token->getPosition());
 		}
 		lstExp.clear();
-		store = token->getLexeme();
+		store = ptrAtribuir->id;
 		break;
 
 	case 5:
@@ -484,7 +488,7 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 			{
 				Tabela.setWarning(*ptrSim);
 			}
-			Tabela.gera_cod("LD", token->getLexeme());
+			Tabela.gera_cod("LD", ptrSim->id);
 			Tabela.gera_cod("STO", "$out_port");
 		}
 		else
@@ -962,7 +966,7 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 	case 63: // - Gera o rótulo de início da rotina
 
 		nome = token->getLexeme();
-		Tabela.gera_cod("ROT_" + nome, "");
+		Tabela.gera_cod("ROT_" + nome, ":");
 		break;
 
 	case 64: // - Gera retorno ao ponto de chamada da rotina
@@ -996,7 +1000,7 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 			}
 			else
 			{
-				Tabela.gera_cod("LD", token->getLexeme()); // ver se é valor ou id
+				Tabela.gera_cod("LD", ptrSim->id); // ver se é valor ou id
 			}
 			Tabela.gera_cod("STO", busca_nome_funcao);
 		}
@@ -1015,7 +1019,7 @@ void Semantico::executeAction(int action, const Token* token) throw (SemanticErr
 		{
 			Tabela.setWarning(*ptrFunc, "Muitos parametros na funcao");
 		}
-		Tabela.gera_cod("CALL", "_" + nome_call);
+		Tabela.gera_cod("CALL", "ROT_" + nome_call);
 		break;
 
 	case 68:

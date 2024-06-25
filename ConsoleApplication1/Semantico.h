@@ -11,147 +11,148 @@ using namespace std;
 
 class Simbolo {
 public:
-    string tipo;
-    string id;
+	string tipo;
+	string id;
 
-    int escopo;
+	int escopo;
 
-    bool inicializado = false;
-    bool usado = false;
+	bool inicializado = false;
+	bool usado = false;
 
-    bool parametro = false;
+	bool parametro = false;
 
-    bool funcao = false;
-    int posParam = 0;
+	bool funcao = false;
+	int posParam = 0;
 
-    bool vetor = false;
-    int posVetor = 0;
+	bool vetor = false;
+	int posVetor = 0;
 
-    void DeclararTipo(std::string t);
+	string using_function_name = "";
+
+	void DeclararTipo(std::string t);
 
 };
 
 class Warning {
 public:
-    string error;
-    Simbolo sim;
+	string error;
+	Simbolo sim;
 };
 
 class Temp {
 public:
-    string name;
-    bool livre;
+	string name;
+	bool livre;
 };
 
 class TabelaSimbolo
 {
 public:
-    list<Simbolo> lstSimbolos;
-    list<Warning> lstWarning;
-    string assembly = "";
-    string data;
-    list<Temp> temp;
-    int contador = 0;
+	list<Simbolo> lstSimbolos;
+	list<Warning> lstWarning;
+	string assembly = "";
+	string data;
+	list<Temp> temp;
+	int contador = 0;
 
-    Temp* GetTemp()
-    {
-        for (Temp& t : temp)
-        {
-            if (t.livre) {
-                return &t;
-            }
-        }
+	Temp* GetTemp()
+	{
+		for (Temp& t : temp)
+		{
+			if (t.livre) {
+				return &t;
+			}
+		}
 
-        Temp t;
+		Temp t;
 
-        t.livre = true;
-        t.name = "temp" + to_string(contador);
-        temp.push_back(t);
+		t.livre = true;
+		t.name = "temp" + to_string(contador);
+		temp.push_back(t);
 
-        this->contador++;
+		this->contador++;
 
-        for (Temp& t : temp)
-        {
-            if (t.livre)
-                return &t;
-        }
+		for (Temp& t : temp)
+		{
+			if (t.livre)
+				return &t;
+		}
 
-        gera_cod("Error:", "nullptr returned.");
-        return nullptr;
-    }
+		gera_cod("Error:", "nullptr returned.");
+		return nullptr;
+	}
 
-    void gera_cod(string funcao, string valor)
-    {
-        assembly.append(funcao);
-        assembly.append(" ");
-        assembly.append(valor);
-        assembly.append("\n");
-    }
+	void gera_cod(string funcao, string valor)
+	{
+		assembly.append(funcao);
+		assembly.append(" ");
+		assembly.append(valor);
+		assembly.append("\n");
+	}
 
-    void setUnusedWarning()
-    {
-        Warning war;
-        for (Simbolo sim : this->lstSimbolos)
-        {
-            if (sim.usado == false)
-            {
-                war.sim = sim;
-                if (sim.funcao)
-                    war.error = "Funcao nao utilizada";
-                else
-                    war.error = "Variavel nao utilizada";
-                this->lstWarning.push_back(war);
-            }
-        }
-    }
+	void setUnusedWarning()
+	{
+		Warning war;
+		for (Simbolo sim : this->lstSimbolos)
+		{
+			if (sim.usado == false)
+			{
+				war.sim = sim;
+				if (sim.funcao)
+					war.error = "Funcao nao utilizada";
+				else
+					war.error = "Variavel nao utilizada";
+				this->lstWarning.push_back(war);
+			}
+		}
+	}
 
-    void setWarning(Simbolo sim, string error = "Variavel nao atribuiada utilizada")
-    {
-        Warning war;
-        war.error = error;
-        war.sim = sim;
-        this->lstWarning.push_back(war);
-    }
+	void setWarning(Simbolo sim, string error = "Variavel nao atribuiada utilizada")
+	{
+		Warning war;
+		war.error = error;
+		war.sim = sim;
+		this->lstWarning.push_back(war);
+	}
 
-    bool Procurar(stack<int> Escopo, string lexema)
-    {
-        while (!Escopo.empty())
-        {
-            for (Simbolo sim : this->lstSimbolos)
-            {
-                if (sim.escopo == Escopo.top() && sim.id == lexema)
-                {
-                    return true;
-                }
-            }
-            Escopo.pop();
-        }
-        return false;
-    }
+	bool Procurar(stack<int> Escopo, string lexema)
+	{
+		while (!Escopo.empty())
+		{
+			for (Simbolo sim : this->lstSimbolos)
+			{
+				if (sim.escopo == Escopo.top() && sim.id == lexema)
+				{
+					return true;
+				}
+			}
+			Escopo.pop();
+		}
+		return false;
+	}
 
-    Simbolo* Find(stack<int> Escopo, string lexema)
-    {
-        while (!Escopo.empty())
-        {
-            for (Simbolo& sim : this->lstSimbolos)
-            {
-                if (sim.escopo == Escopo.top() && sim.id == lexema)
-                {
-                    return &sim;
-                }
-            }
-            Escopo.pop();
-        }
-        return nullptr;
-    }
+	Simbolo* Find(stack<int> Escopo, string lexema)
+	{
+		while (!Escopo.empty())
+		{
+			for (Simbolo& sim : this->lstSimbolos)
+			{
+				if ((sim.escopo == Escopo.top()) && ((sim.id == lexema) || ((sim.using_function_name + "_" + lexema) == sim.id))) {
+					return &sim;
+				}
+			}
+			Escopo.pop();
+		}
+		return nullptr;
+	}
 };
 
 class Semantico
 {
 public:
-    void executeAction(int action, const Token* token) throw (SemanticError);
-    std::string getParname(string nome_call, int contpar);
-    TabelaSimbolo Tabela;
+	void executeAction(int action, const Token* token) throw (SemanticError);
+	std::string getParname(string nome_call, int contpar);
+	TabelaSimbolo Tabela;
 };
 
 #endif

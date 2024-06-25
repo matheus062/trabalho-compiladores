@@ -1,40 +1,44 @@
 .data
-temp0 : 0
-temp1 : 0
+soma: 0
+soma_a: 0
+soma_b: 0
+soma_result: 0
 a: 0
 b: 0
 
 .text
 JMP main
+ROT_soma :
+LD soma_a
+ADD soma_b
+STO soma_result
+LD soma_result
+STO $out_port
+RETURN 0
 main:  
-LD $in_port
-STO a
 LDI 10
+STO a
+LDI 5
 STO b
 LD a
-STO temp0
+STO soma_a
 LD b
-STO temp1
-LD temp0
-SUB temp1
-BLT ROT1
+STO soma_b
+CALL ROT_soma
+LDI 11
+STO a
+LDI 2
+STO b
 LD a
-STO $out_port
-LD a
-STO temp0
+STO soma_a
 LD b
-STO temp1
-LD temp0
-SUB temp1
-BNE ROT2
-LD b
-STO $out_port
-ROT2:  
-JMP ROT3
-ROT1:  
-LDI 999
+STO soma_b
+CALL ROT_soma
+LDI 50
 STO a
 LD a
-STO $out_port
-ROT3:  
+STO soma_a
+LD b
+STO soma_b
+CALL ROT_soma
 LDI 0

@@ -1,25 +1,31 @@
 <?php
 
-int main(){
+void soma(int $a, int $b) {
+	int $result;
+	
+	$result = $a + $b;
+	php_out << $result;
+}
+
+int main() {
 
 	int $a;
 	int $b;
 
-	php_in >> $a;
+	$a = 10;
+	$b = 5;
 
-	$b = 10;
+	soma($a, $b);
 
-	if ($a >= $b){
-		php_out << $a;
+	$a = 11;
+	$b = 2;
 
-		if($a == $b) {
-			php_out << $b;		
-		}
+	soma($a, $b);
 
-	} else {
-		$a = 999;
-		php_out << $a;
-	}
+	$a = 50;
+
+	soma($a, $b);
 
 	return 0;
 }
+
